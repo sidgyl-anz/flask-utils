@@ -12,11 +12,10 @@ app = Flask(__name__)
 DOWNLOAD_FOLDER = 'static/downloads'
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
-# Correct Chrome and ChromeDriver paths
 CHROME_BIN = os.getenv("CHROME_BIN", "/usr/bin/google-chrome")
 CHROMEDRIVER_PATH = os.getenv("CHROMEDRIVER_PATH", "/usr/bin/chromedriver")
 
-# Configure Selenium for headless Chrome
+# Configure Selenium
 chrome_options = Options()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument("--no-sandbox")
@@ -26,14 +25,15 @@ chrome_options.binary_location = CHROME_BIN
 def download_images_from_gallery(gallery_num):
     url = f'https://platesmania.com/kr/gallery-{gallery_num}'
 
-    # Initialize WebDriver
-    driver = webdriver.Chrome(service=Service(CHROMEDRIVER_PATH), options=chrome_options)
-    driver.get(url)
-    time.sleep(5)  # Wait for JS to load
-
-    soup = BeautifulSoup(driver.page_source, 'html.parser')
-    images = soup.find_all('img')
-    driver.quit()
+    try:
+        driver = webdriver.Chrome(service=Service(CHROMEDRIVER_PATH), options=chrome_options)
+        driver.get(url)
+        time.sleep(5)
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        images = soup.find_all('img')
+        driver.quit()
+    except Exception as e:
+        return f"❌ ChromeDriver Error: {str(e)}"
 
     count = 0
     for img in images:
@@ -42,7 +42,6 @@ def download_images_from_gallery(gallery_num):
             full_img_url = 'https://platesmania.com' + img_url
             img_filename = f'gallery{gallery_num}_img{count}.jpg'
             file_path = os.path.join(DOWNLOAD_FOLDER, img_filename)
-
             try:
                 img_data = requests.get(full_img_url).content
                 with open(file_path, 'wb') as handler:
@@ -57,26 +56,6 @@ def download_images_from_gallery(gallery_num):
 def index():
     return render_template('index.html')
 
-@app.route('/download', methods=['POST'])
-def download():
-    start_gallery = int(request.form['start_gallery'])
-    end_gallery = int(request.form['end_gallery'])
-    messages = [download_images_from_gallery(g) for g in range(start_gallery, end_gallery + 1)]
-    return render_template('index.html', messages=messages)
-
-@app.route('/download_all')
-def download_all():
-    zip_filename = 'all_images.zip'
-    zip_filepath = os.path.join(DOWNLOAD_FOLDER, zip_filename)
-    
-    with zipfile.ZipFile(zip_filepath, 'w') as zipf:
-        for root, dirs, files in os.walk(DOWNLOAD_FOLDER):
-            for file in files:
-                if file != zip_filename:
-                    zipf.write(os.path.join(root, file), arcname=file)
-
-    return send_file(zip_filepath, as_attachment=True)
-
 @app.route('/check_chromedriver')
 def check_chromedriver():
     try:
@@ -89,4 +68,3 @@ def check_chromedriver():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
-
