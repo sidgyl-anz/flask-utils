@@ -1,38 +1,35 @@
 from flask import Flask, render_template, request, send_file
-import os
-import time
-import requests
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
+import requests
+import os
 import zipfile
+import time
 
 app = Flask(__name__)
 DOWNLOAD_FOLDER = 'static/downloads'
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
-# Headers to mimic real browser behavior
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.5",
-    "Referer": "https://platesmania.com/",
-    "Connection": "keep-alive",
-    "DNT": "1",
-    "Upgrade-Insecure-Requests": "1"
-}
+# Configure Selenium for headless Chrome
+chrome_options = Options()
+chrome_options.add_argument("--headless")
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")
+chrome_options.binary_location = "/usr/bin/chromium-browser"
 
 def download_images_from_gallery(gallery_num):
     url = f'https://platesmania.com/kr/gallery-{gallery_num}'
-    session = requests.Session()  # Maintains session cookies
-    session.headers.update(HEADERS)
 
-    try:
-        response = session.get(url, timeout=10)
-        response.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        return f"❌ Failed to access {url}: {e}"
+    # Launch Chrome using Selenium
+    driver = webdriver.Chrome(service=Service("/usr/bin/chromedriver"), options=chrome_options)
+    driver.get(url)
+    time.sleep(5)  # Wait for JS to load
 
-    soup = BeautifulSoup(response.content, 'html.parser')
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
     images = soup.find_all('img')
+    driver.quit()
 
     count = 0
     for img in images:
@@ -41,16 +38,14 @@ def download_images_from_gallery(gallery_num):
             full_img_url = 'https://platesmania.com' + img_url
             img_filename = f'gallery{gallery_num}_img{count}.jpg'
             file_path = os.path.join(DOWNLOAD_FOLDER, img_filename)
+
             try:
-                img_data = session.get(full_img_url, timeout=10).content
+                img_data = requests.get(full_img_url).content
                 with open(file_path, 'wb') as handler:
                     handler.write(img_data)
                 count += 1
-                print(f"✅ Downloaded {img_filename}")
             except Exception as e:
-                print(f"⚠️ Failed to download {full_img_url}: {e}")
-        
-        time.sleep(2)  # Delay to prevent triggering anti-bot
+                print(f"Failed to download {full_img_url}: {e}")
 
     if count == 0:
         return f"⚠️ No images found in Gallery {gallery_num}."
@@ -77,11 +72,10 @@ def download_all():
     zip_filename = 'all_images.zip'
     zip_filepath = os.path.join(DOWNLOAD_FOLDER, zip_filename)
 
-    # Create ZIP file
     with zipfile.ZipFile(zip_filepath, 'w') as zipf:
         for root, dirs, files in os.walk(DOWNLOAD_FOLDER):
             for file in files:
-                if file != zip_filename:  # Avoid adding the ZIP itself
+                if file != zip_filename:
                     file_path = os.path.join(root, file)
                     zipf.write(file_path, os.path.relpath(file_path, DOWNLOAD_FOLDER))
 
