@@ -4,11 +4,14 @@ services:
     env: python
     buildCommand: |
       apt-get update
-      apt-get install -y chromium chromium-driver
+      apt-get install -y wget gnupg2
+      wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+      apt install -y ./google-chrome-stable_current_amd64.deb
+      apt-get install -y chromium-driver
       pip install -r requirements.txt
     startCommand: gunicorn app:app
     envVars:
       - key: CHROME_BIN
-        value: /usr/bin/chromium
+        value: /usr/bin/google-chrome
       - key: CHROMEDRIVER_PATH
-        value: /usr/lib/chromium/chromedriver
+        value: /usr/bin/chromedriver
