@@ -13,8 +13,8 @@ DOWNLOAD_FOLDER = 'static/downloads'
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
 # Correct Chrome and ChromeDriver paths
-CHROME_BIN = os.getenv("CHROME_BIN", "/usr/bin/chromium")
-CHROMEDRIVER_PATH = os.getenv("CHROMEDRIVER_PATH", "/usr/lib/chromium/chromedriver")
+CHROME_BIN = os.getenv("CHROME_BIN", "/usr/bin/google-chrome")
+CHROMEDRIVER_PATH = os.getenv("CHROMEDRIVER_PATH", "/usr/bin/chromedriver")
 
 # Configure Selenium
 chrome_options = Options()
@@ -77,5 +77,4 @@ def download_all():
 
     return send_file(zip_filepath, as_attachment=True)
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+if
