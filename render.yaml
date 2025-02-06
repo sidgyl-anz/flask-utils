@@ -11,4 +11,4 @@ services:
       - key: CHROME_BIN
         value: /usr/bin/chromium
       - key: CHROMEDRIVER_PATH
-        value: /usr/bin/chromedriver
+        value: /usr/lib/chromium/chromedriver
