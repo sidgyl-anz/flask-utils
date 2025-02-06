@@ -55,6 +55,14 @@ def download_images_from_gallery(gallery_num):
 @app.route('/')
 def index():
     return render_template('index.html')
+    
+@app.route('/download', methods=['POST'])
+def download():
+    start_gallery = int(request.form['start_gallery'])
+    end_gallery = int(request.form['end_gallery'])
+    messages = [download_images_from_gallery(g) for g in range(start_gallery, end_gallery + 1)]
+    return render_template('index.html', messages=messages)
+
 
 @app.route('/check_chromedriver')
 def check_chromedriver():
