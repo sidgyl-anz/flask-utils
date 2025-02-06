@@ -69,12 +69,12 @@ def download_all():
     zip_filename = 'all_images.zip'
     zip_filepath = os.path.join(DOWNLOAD_FOLDER, zip_filename)
     
-    with zipfile.ZipFile(zip_filepath, 'w') as zipf:
-        for root, dirs, files in os.walk(DOWNLOAD_FOLDER):
-            for file in files:
-                if file != zip_filename:
-                    zipf.write(os.path.join(root, file), arcname=file)
-
-    return send_file(zip_filepath, as_attachment=True)
-
-if
+    if os.listdir(DOWNLOAD_FOLDER):  # Check if there are files to zip
+        with zipfile.ZipFile(zip_filepath, 'w') as zipf:
+            for root, dirs, files in os.walk(DOWNLOAD_FOLDER):
+                for file in files:
+                    if file != zip_filename:
+                        zipf.write(os.path.join(root, file), arcname=file)
+        return send_file(zip_filepath, as_attachment=True)
+    else:
+        return "⚠️ No images available to download!"
