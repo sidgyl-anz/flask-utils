@@ -5,12 +5,20 @@
 </head>
 <body>
     <h1>Korean License Plate Scraper</h1>
+    
     <form method="POST" action="/download">
         <label>Start Gallery Number:</label>
         <input type="number" name="start_gallery" required><br><br>
+        
         <label>End Gallery Number:</label>
         <input type="number" name="end_gallery" required><br><br>
+        
         <button type="submit">Download Images</button>
+    </form>
+
+    <br>
+    <form action="/download_all" method="get">
+        <button type="submit">Download All Images as ZIP</button>
     </form>
 
     {% if messages %}
