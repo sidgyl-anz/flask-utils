@@ -12,11 +12,11 @@ app = Flask(__name__)
 DOWNLOAD_FOLDER = 'static/downloads'
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
-# Read Chrome binary and driver path from environment variables
+# Correct Chrome and ChromeDriver paths
 CHROME_BIN = os.getenv("CHROME_BIN", "/usr/bin/chromium")
-CHROMEDRIVER_PATH = os.getenv("CHROMEDRIVER_PATH", "/usr/bin/chromedriver")
+CHROMEDRIVER_PATH = os.getenv("CHROMEDRIVER_PATH", "/usr/lib/chromium/chromedriver")
 
-# Configure Selenium for headless Chrome
+# Configure Selenium
 chrome_options = Options()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument("--no-sandbox")
@@ -29,7 +29,7 @@ def download_images_from_gallery(gallery_num):
     # Initialize WebDriver
     driver = webdriver.Chrome(service=Service(CHROMEDRIVER_PATH), options=chrome_options)
     driver.get(url)
-    time.sleep(5)  # Wait for the page to load
+    time.sleep(5)  # Wait for page to load
 
     soup = BeautifulSoup(driver.page_source, 'html.parser')
     images = soup.find_all('img')
