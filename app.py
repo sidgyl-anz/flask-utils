@@ -3,29 +3,33 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
-import requests
 import os
 import zipfile
+import requests
 import time
 
 app = Flask(__name__)
 DOWNLOAD_FOLDER = 'static/downloads'
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
+# Read Chrome binary and driver path from environment variables
+CHROME_BIN = os.getenv("CHROME_BIN", "/usr/bin/chromium")
+CHROMEDRIVER_PATH = os.getenv("CHROMEDRIVER_PATH", "/usr/bin/chromedriver")
+
 # Configure Selenium for headless Chrome
 chrome_options = Options()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.binary_location = "/usr/bin/chromium-browser"
+chrome_options.binary_location = CHROME_BIN
 
 def download_images_from_gallery(gallery_num):
     url = f'https://platesmania.com/kr/gallery-{gallery_num}'
 
-    # Launch Chrome using Selenium
-    driver = webdriver.Chrome(service=Service("/usr/bin/chromedriver"), options=chrome_options)
+    # Initialize WebDriver
+    driver = webdriver.Chrome(service=Service(CHROMEDRIVER_PATH), options=chrome_options)
     driver.get(url)
-    time.sleep(5)  # Wait for JS to load
+    time.sleep(5)  # Wait for the page to load
 
     soup = BeautifulSoup(driver.page_source, 'html.parser')
     images = soup.find_all('img')
@@ -47,9 +51,7 @@ def download_images_from_gallery(gallery_num):
             except Exception as e:
                 print(f"Failed to download {full_img_url}: {e}")
 
-    if count == 0:
-        return f"⚠️ No images found in Gallery {gallery_num}."
-    return f"✅ Downloaded {count} images from Gallery {gallery_num}."
+    return f"✅ Downloaded {count} images from Gallery {gallery_num}" if count else f"⚠️ No images found."
 
 @app.route('/')
 def index():
@@ -59,27 +61,21 @@ def index():
 def download():
     start_gallery = int(request.form['start_gallery'])
     end_gallery = int(request.form['end_gallery'])
-
-    messages = []
-    for gallery_num in range(start_gallery, end_gallery + 1):
-        message = download_images_from_gallery(gallery_num)
-        messages.append(message)
-
+    messages = [download_images_from_gallery(g) for g in range(start_gallery, end_gallery + 1)]
     return render_template('index.html', messages=messages)
 
 @app.route('/download_all')
 def download_all():
     zip_filename = 'all_images.zip'
     zip_filepath = os.path.join(DOWNLOAD_FOLDER, zip_filename)
-
+    
     with zipfile.ZipFile(zip_filepath, 'w') as zipf:
         for root, dirs, files in os.walk(DOWNLOAD_FOLDER):
             for file in files:
                 if file != zip_filename:
-                    file_path = os.path.join(root, file)
-                    zipf.write(file_path, os.path.relpath(file_path, DOWNLOAD_FOLDER))
+                    zipf.write(os.path.join(root, file), arcname=file)
 
     return send_file(zip_filepath, as_attachment=True)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=10000)
