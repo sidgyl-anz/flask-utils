@@ -16,7 +16,7 @@ os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 CHROME_BIN = os.getenv("CHROME_BIN", "/usr/bin/google-chrome")
 CHROMEDRIVER_PATH = os.getenv("CHROMEDRIVER_PATH", "/usr/bin/chromedriver")
 
-# Configure Selenium
+# Configure Selenium for headless Chrome
 chrome_options = Options()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument("--no-sandbox")
@@ -29,7 +29,7 @@ def download_images_from_gallery(gallery_num):
     # Initialize WebDriver
     driver = webdriver.Chrome(service=Service(CHROMEDRIVER_PATH), options=chrome_options)
     driver.get(url)
-    time.sleep(5)  # Wait for page to load
+    time.sleep(5)  # Wait for JS to load
 
     soup = BeautifulSoup(driver.page_source, 'html.parser')
     images = soup.find_all('img')
@@ -69,12 +69,24 @@ def download_all():
     zip_filename = 'all_images.zip'
     zip_filepath = os.path.join(DOWNLOAD_FOLDER, zip_filename)
     
-    if os.listdir(DOWNLOAD_FOLDER):  # Check if there are files to zip
-        with zipfile.ZipFile(zip_filepath, 'w') as zipf:
-            for root, dirs, files in os.walk(DOWNLOAD_FOLDER):
-                for file in files:
-                    if file != zip_filename:
-                        zipf.write(os.path.join(root, file), arcname=file)
-        return send_file(zip_filepath, as_attachment=True)
-    else:
-        return "⚠️ No images available to download!"
+    with zipfile.ZipFile(zip_filepath, 'w') as zipf:
+        for root, dirs, files in os.walk(DOWNLOAD_FOLDER):
+            for file in files:
+                if file != zip_filename:
+                    zipf.write(os.path.join(root, file), arcname=file)
+
+    return send_file(zip_filepath, as_attachment=True)
+
+@app.route('/check_chromedriver')
+def check_chromedriver():
+    try:
+        driver = webdriver.Chrome(service=Service(CHROMEDRIVER_PATH), options=chrome_options)
+        version = driver.capabilities['browserVersion']
+        driver.quit()
+        return f"✅ ChromeDriver is working! Version: {version}"
+    except Exception as e:
+        return f"❌ Error: {str(e)}"
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=10000)
+
